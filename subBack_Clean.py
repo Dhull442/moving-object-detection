@@ -1,5 +1,6 @@
 import numpy as np;
 import cv2
+import math
 import os, sys
 
 kernel = np.ones((8,8),np.uint8)
@@ -62,37 +63,58 @@ def applyHough(image,original):
 	img = cv2.imread(image)
 	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 	edges = cv2.Canny(gray,50,150,apertureSize = 3)
-	lines = cv2.HoughLinesP(edges,1,np.pi/360,200)
+	lines = cv2.HoughLinesP(edges,0.5,np.pi/720,100,25,10)
+	xmin = ymin = 100000;
+	xmax = ymax = 0;
+	if lines is not None:
+		number = 0;
+		for line in lines:
+			x1,y1,x2,y2 = line[0]
+			number = number + 1;
+			if(y1<ymin): ymin = y1;
+			if(x1<xmin): xmin = x1;
+			if(x2>xmax): xmax = x2;
+			if(y2>ymax): ymax = y2;
+			# cv2.line(original,(x1,y1),(x2,y2),(0,0,255),2)
+		# x_mid = (x1_mean + x2_mean) / 2;
+		# y_mid = (y1_mean + y2_mean) / 2;
+		# m = math.tan(a_avg);
+		# print(m);
+		# # print(x_mid)
+		# c = x_mid + (y_mid/m);
+		# print(c)
+		# cv2.line(original,(int(c),0),(int(2*x_mid-c),int(2*y_mid)),(255,0,255),4)
+	l = math.sqrt((xmin-xmax)**2 + (ymin-ymax)**2)
+	lines = cv2.HoughLines(edges,0.5,np.pi/720,100)
 	if lines is not None:
 		number = 0;
 		x1_mean = y1_mean = x2_mean = y2_mean = 0;
-		xmin = ymin = 100000;
 		for line in lines:
-			# rho,theta = line[0]
-			x1,y1,x2,y2 = line[0]
-			# if rho < 0:
-			# 	rho*=-1
-			# 	theta-=np.pi
+			rho,theta = line[0]
+			if rho < 0:
+				rho*=-1
+				theta-=np.pi
 			number = number + 1;
-			# a = np.cos(theta)
-			# b = np.sin(theta)
-			# x0 = a*rho
-			# y0 = b*rho
-			# x1 = int(x0 + 500*(-b))
-			# y1 = int(y0 + 500*(a))
-			# x2 = int(x0 - 500*(-b))
-			# y2 = int(y0 - 500*(a))
+			a = np.cos(theta)
+			b = np.sin(theta)
+			x0 = a*rho
+			y0 = b*rho
+			x1 = int(x0 + l*(-b))
+			y1 = int(y0 + l*(a))
+			x2 = int(x0 - l*(-b))
+			y2 = int(y0 - l*(a))
+			# a=np.arctan(y2-y1/x2-x1)
+			# a_avg = a_avg + (a-a_avg)/number
 			x1_mean = (x1_mean)+(x1-x1_mean)/number
 			y1_mean = (y1_mean)+(y1-y1_mean)/number
 			x2_mean = (x2_mean)+(x2-x2_mean)/number
 			y2_mean = (y2_mean)+(y2-y2_mean)/number
-			if(y1<ymin): ymin = y1;
-			if(y2<ymin): ymin = y2;
-			if(x1<xmin): xmin = x1;
-			if(x2<xmin): xmin = x2;
-			# cv2.line(img,(x1,y1),(x2,y2),(0,0,255),2)
-		cv2.line(original,(int(x1_mean)+int(x2_mean)-xmin,int(y2_mean)+int(y1_mean)-ymin),(int(xmin),ymin),(0,0,255),2)
-		# cv2.imshow('asd',img)
+			# if(y1<ymin): ymin = y1;
+			# if(y2<ymin): ymin = y2;
+			# if(x1<xmin): xmin = x1;
+			# if(x2<xmin): xmin = x2;
+			# cv2.line(original,(x1,y1),(x2,y2),(0,0,255),2)
+		cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,255,255),3)
 	return original
 
 
