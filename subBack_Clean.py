@@ -62,12 +62,13 @@ def applyHough(image,original):
 	img = cv2.imread(image)
 	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 	edges = cv2.Canny(gray,50,150,apertureSize = 3)
-	lines = cv2.HoughLinesP(edges,1,np.pi/180,120)
+	lines = cv2.HoughLinesP(edges,1,np.pi/360,200)
 	if lines is not None:
 		number = 0;
 		x1_mean = y1_mean = x2_mean = y2_mean = 0;
 		xmin = ymin = 100000;
 		for line in lines:
+			# rho,theta = line[0]
 			x1,y1,x2,y2 = line[0]
 			# if rho < 0:
 			# 	rho*=-1
@@ -89,12 +90,8 @@ def applyHough(image,original):
 			if(y2<ymin): ymin = y2;
 			if(x1<xmin): xmin = x1;
 			if(x2<xmin): xmin = x2;
-			cv2.line(img,(x1,y1),(x2,y2),(0,0,255),2)
-		# x1_mean = round(x1_mean);
-		# x2_mean = round(x2_mean);
-		# y1_mean = round(y1_mean);
-		# y2_mean = round(y2_mean);
-		cv2.line(original,(2*int(x1_mean)-xmin,2*int(y1_mean)-ymin),(xmin,ymin),(0,0,255),2)
+			# cv2.line(img,(x1,y1),(x2,y2),(0,0,255),2)
+		cv2.line(original,(int(x1_mean)+int(x2_mean)-xmin,int(y2_mean)+int(y1_mean)-ymin),(int(xmin),ymin),(0,0,255),2)
 		# cv2.imshow('asd',img)
 	return original
 
