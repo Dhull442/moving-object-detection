@@ -3,7 +3,9 @@ import cv2
 import os, sys
 import math
 
-kernel = np.ones((8,8),np.uint8)
+kernel = np.ones((8,8),np.uint8);
+cutoff = 0;
+prev_x1 = prev_x2 = prev_y1 = prev_y2 = 0
 
 # Function to extract frames
 def FrameCapture(name):
@@ -121,16 +123,29 @@ def applyHough(image,original):
 		# cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,0,255),2)
 		slope = (y2_median - y1_median)/(x2_median - x1_median)
 		x_lim_up = (0 - y1_median)/slope + x1_median
-		x_lim_down = (ymax - y1_median)/slope + x1_median
+		global cutoff, prev_x1, prev_x2, prev_y1, prev_y2;
+		if (cutoff == 0):
+			cutoff = ymax;
+		elif (cutoff > 0 and ymax > 0):
+			cutoff = 0.9*cutoff + 0.1*ymax;
+		# print(cutoff)
+		x_lim_down = (cutoff - y1_median)/slope + x1_median
 		# print(str(x1_median) + " " + str(y1_median) + " " + str(x2_median) + " " + str(y2_median))
 		# cv2.line(original,(int(x1_median),int(y1_median)),(int(x2_median),int(y2_median)),(0,255,255),3)
-		cv2.line(original,(int(x_lim_up),int(0)),(int(x_lim_down),int(ymax)),(0,0,255),3)
+		cv2.line(original,(int(x_lim_up),int(0)),(int(x_lim_down),int(cutoff)),(0,0,255),3)
+		prev_x1 = x_lim_up;
+		prev_y1 = 0;
+		prev_x2 = x_lim_down;
+		prev_y2 = cutoff;
 		# cv2.imshow('asd',img)
+	else:
+		cv2.line(original,(int(prev_x1),int(prev_y1)),(int(prev_x2),int(prev_y2)),(0,0,255),3)
 	return original
 
 
 with open('filelist.txt') as f:
 	lines = f.readlines();
 	name=lines[1].split('.',1)[0];
+	cutoff = 0;
 	BGSubtraction(name);
 	#FrameCapture(name);
