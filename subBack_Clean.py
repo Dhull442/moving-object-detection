@@ -1,4 +1,5 @@
-import numpy as np;
+import numpy as np
+import statistics
 import cv2
 import math
 import os, sys
@@ -103,6 +104,10 @@ def applyHough(image,original):
 			y1 = int(y0 + l*(a))
 			x2 = int(x0 - l*(-b))
 			y2 = int(y0 - l*(a))
+			x1_list.append(x1)
+			x2_list.append(x2)
+			y1_list.append(y1)
+			y2_list.append(y2)
 			# a=np.arctan(y2-y1/x2-x1)
 			# a_avg = a_avg + (a-a_avg)/number
 			x1_mean = (x1_mean)+(x1-x1_mean)/number
@@ -114,7 +119,12 @@ def applyHough(image,original):
 			# if(x1<xmin): xmin = x1;
 			# if(x2<xmin): xmin = x2;
 			# cv2.line(original,(x1,y1),(x2,y2),(0,0,255),2)
+		# x1_median = statistics.median(x1_list)
+		# x2_median = statistics.median(x2_list)
+		# y1_median = statistics.median(y1_list)
+		# y2_median = statistics.median(y2_list)
 		cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,255,255),3)
+		# cv2.line(original,(int(x1_median),int(y1_median)),(int(x2_median),int(y2_median)),(0,255,255),3)
 	return original
 
 
