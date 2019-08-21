@@ -1,8 +1,11 @@
 import numpy as np;
 import cv2
 import os, sys
+import math
 
-kernel = np.ones((8,8),np.uint8)
+kernel = np.ones((8,8),np.uint8);
+cutoff = 0;
+prev_x1 = prev_x2 = prev_y1 = prev_y2 = 0
 
 # Function to extract frames
 def FrameCapture(name):
@@ -61,11 +64,16 @@ def applySobel(image_path,original):
 def applyHough(image,original):
 	img = cv2.imread(image)
 	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-	edges = cv2.Canny(gray,50,150,apertureSize = 3)
-	lines = cv2.HoughLines(edges,1,np.pi/180,150)
+	#edges = cv2.Canny(gray,50,150,apertureSize = 3) #23,55
+	edges = cv2.Canny(gray,23,55,apertureSize = 3)
+	lines = cv2.HoughLines(edges,1,np.pi/180,120) #150 #90
 	if lines is not None:
-		number = 0;
-		x1_mean = y1_mean = x2_mean = y2_mean = 0;
+		# number = 0;
+		# x1_mean = y1_mean = x2_mean = y2_mean = 0;
+		x1_list = [];
+		x2_list = [];
+		y1_list = [];
+		y2_list = [];
 		for line in lines:
 			rho,theta = line[0]
 			a = np.cos(theta)
@@ -76,49 +84,68 @@ def applyHough(image,original):
 			y1 = int(y0 + 1000*(a))
 			x2 = int(x0 - 1000*(-b))
 			y2 = int(y0 - 1000*(a))
-			number = number + 1;
-			x1_mean = (x1_mean)+(x1-x1_mean)/number
-			y1_mean = (y1_mean)+(y1-y1_mean)/number
-			x2_mean = (x2_mean)+(x2-x2_mean)/number
-			y2_mean = (y2_mean)+(y2-y2_mean)/number
+			x1_list.append(x1)
+			x2_list.append(x2)
+			y1_list.append(y1)
+			y2_list.append(y2)
+			# number = number + 1;
+			# x1_mean = (x1_mean)+(x1-x1_mean)/number
+			# y1_mean = (y1_mean)+(y1-y1_mean)/number
+			# x2_mean = (x2_mean)+(x2-x2_mean)/number
+			# y2_mean = (y2_mean)+(y2-y2_mean)/number
+		x1_median = int(np.ma.median(x1_list))
+		x2_median = int(np.ma.median(x2_list))
+		y1_median = int(np.ma.median(y1_list))
+		y2_median = int(np.ma.median(y2_list))
+		# cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,0,255),2)
 
-		cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,0,255),2)
-
-		# lines = cv2.HoughLinesP(edges,1,np.pi/360,200)
-		# if lines is not None:
-		# 	# number = 0;
-		# 	# x1_mean = y1_mean = x2_mean = y2_mean = 0;
-		# 	xmin = ymin = 100000;
-		# 	for line in lines:
-		# 		x1,y1,x2,y2 = line[0]
-		# 	# 	# if rho < 0:
-		# 	# 	# 	rho*=-1
-		# 	# 	# 	theta-=np.pi
-		# 	# 	number = number + 1;
-		# 	# 	# a = np.cos(theta)
-		# 	# 	# b = np.sin(theta)
-		# 	# 	# x0 = a*rho
-		# 	# 	# y0 = b*rho
-		# 	# 	# x1 = int(x0 + 500*(-b))
-		# 	# 	# y1 = int(y0 + 500*(a))
-		# 	# 	# x2 = int(x0 - 500*(-b))
-		# 	# 	# y2 = int(y0 - 500*(a))
-		# 	# 	x1_mean = (x1_mean)+(x1-x1_mean)/number
-		# 	# 	y1_mean = (y1_mean)+(y1-y1_mean)/number
-		# 	# 	x2_mean = (x2_mean)+(x2-x2_mean)/number
-		# 	# 	y2_mean = (y2_mean)+(y2-y2_mean)/number
-		# 		if(y1<ymin): ymin = y1;
-		# 		if(y2<ymin): ymin = y2;
-		# 		if(x1<xmin): xmin = x1;
-		# 		if(x2<xmin): xmin = x2;
-		# 		# cv2.line(img,(x1,y1),(x2,y2),(0,0,255),2)
-		#cv2.line(original,(int(x1_mean)+int(x2_mean)-xmin,int(y2_mean)+int(y1_mean)-ymin),(int(xmin),ymin),(0,0,255),2)
+		lines = cv2.HoughLinesP(edges,0.5,np.pi/720,100,25,10)
+		l = 0;
+		xmin = ymin = 100000;
+		xmax = ymax = -100000;
+		if lines is not None:
+			for line in lines:
+				x1,y1,x2,y2 = line[0]
+				if(y1<ymin): ymin = y1;
+				if(x1<xmin): xmin = x1;
+				if(x2>xmax): xmax = x2;
+				if(y2>ymax): ymax = y2;
+				if(y2<ymin): ymin = y2;
+				if(x2<xmin): xmin = x2;
+				if(x1>xmax): xmax = x1;
+				if(y1>ymax): ymax = y1;
+				# cv2.line(original,(x1,y1),(x2,y2),(0,0,255),2)
+			# l = math.sqrt((xmin-xmax)**2 + (ymin-ymax)**2)
+		# cv2.line(original,(int(x1_mean)+int(x2_mean)-xmin,int(y2_mean)+int(y1_mean)-ymin),(int(xmin),ymin),(0,0,255),2)
+		# slope_mean = abs((y2_mean - y1_mean)/(x2_mean-x1_mean))
+		# slope_median = abs((y2_median - y1_median)/(x2_median-x1_median))
+		# print(slope_mean-slope_median);
+		# cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,0,255),2)
+		slope = (y2_median - y1_median)/(x2_median - x1_median)
+		x_lim_up = (0 - y1_median)/slope + x1_median
+		global cutoff, prev_x1, prev_x2, prev_y1, prev_y2;
+		if (cutoff == 0):
+			cutoff = ymax;
+		elif (cutoff > 0 and ymax > 0):
+			cutoff = 0.9*cutoff + 0.1*ymax;
+		# print(cutoff)
+		x_lim_down = (cutoff - y1_median)/slope + x1_median
+		# print(str(x1_median) + " " + str(y1_median) + " " + str(x2_median) + " " + str(y2_median))
+		# cv2.line(original,(int(x1_median),int(y1_median)),(int(x2_median),int(y2_median)),(0,255,255),3)
+		cv2.line(original,(int(x_lim_up),int(0)),(int(x_lim_down),int(cutoff)),(0,0,255),3)
+		prev_x1 = x_lim_up;
+		prev_y1 = 0;
+		prev_x2 = x_lim_down;
+		prev_y2 = cutoff;
 		# cv2.imshow('asd',img)
+	else:
+		cv2.line(original,(int(prev_x1),int(prev_y1)),(int(prev_x2),int(prev_y2)),(0,0,255),3)
 	return original
 
 
 with open('filelist.txt') as f:
 	lines = f.readlines();
 	name=lines[1].split('.',1)[0];
+	cutoff = 0;
 	BGSubtraction(name);
 	#FrameCapture(name);
