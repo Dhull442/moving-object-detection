@@ -62,7 +62,7 @@ def applySobel(image_path,original):
 def applyHough(image,original):
 	img = cv2.imread(image)
 	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-	edges = cv2.Canny(gray,50,150,apertureSize = 3)
+	edges = cv2.Canny(gray,150,200,apertureSize = 7)
 	lines = cv2.HoughLinesP(edges,0.5,np.pi/720,100,25,10)
 	xmin = ymin = 100000;
 	xmax = ymax = 0;
@@ -114,7 +114,7 @@ def applyHough(image,original):
 			# if(x1<xmin): xmin = x1;
 			# if(x2<xmin): xmin = x2;
 			# cv2.line(original,(x1,y1),(x2,y2),(0,0,255),2)
-		cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,255,255),3)
+		cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,0,255),3)
 	return original
 
 
