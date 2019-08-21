@@ -84,10 +84,16 @@ def applyHough(image,original):
 			y1 = int(y0 + 1000*(a))
 			x2 = int(x0 - 1000*(-b))
 			y2 = int(y0 - 1000*(a))
-			x1_list.append(x1)
-			x2_list.append(x2)
-			y1_list.append(y1)
-			y2_list.append(y2)
+			if (y1 <= y2):
+				x1_list.append(x1)
+				x2_list.append(x2)
+				y1_list.append(y1)
+				y2_list.append(y2)
+			else :
+				x1_list.append(x2)
+				x2_list.append(x1)
+				y1_list.append(y2)
+				y2_list.append(y1)
 			# number = number + 1;
 			# x1_mean = (x1_mean)+(x1-x1_mean)/number
 			# y1_mean = (y1_mean)+(y1-y1_mean)/number
@@ -99,7 +105,7 @@ def applyHough(image,original):
 		y2_median = int(np.ma.median(y2_list))
 		# cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,0,255),2)
 
-		lines = cv2.HoughLinesP(edges,0.5,np.pi/720,100,25,10)
+		lines = cv2.HoughLinesP(edges,0.5,np.pi/720,75,50,5)
 		l = 0;
 		xmin = ymin = 100000;
 		xmax = ymax = -100000;
@@ -145,7 +151,7 @@ def applyHough(image,original):
 
 with open('filelist.txt') as f:
 	lines = f.readlines();
-	name=lines[1].split('.',1)[0];
+	name=lines[0].split('.',1)[0];		#5,8,10
 	cutoff = 0;
 	BGSubtraction(name);
 	#FrameCapture(name);
