@@ -3,9 +3,11 @@ import cv2
 import os, sys
 import math
 
-kernel = np.ones((8,8),np.uint8);
+kernel = np.ones((5,5),np.uint8);
 cutoff = 0;
 prev_x1 = prev_x2 = prev_y1 = prev_y2 = 0
+prev_slope = 0;
+epsilon = 1;
 
 # Function to extract frames
 def FrameCapture(name):
@@ -27,18 +29,28 @@ def FrameCapture(name):
 def BGSubtraction(name):
 	cap = cv2.VideoCapture("dataset/"+name+".mp4")
 	fgbg = cv2.bgsegm.createBackgroundSubtractorMOG();
-	while(1):
+	frame_width = int(cap.get(3))
+	frame_height = int(cap.get(4))
+	ret = 1
+	out = cv2.VideoWriter('output_'+name+'.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame_width,frame_height))
+	while(ret or cap.isOpened()):
 		ret, frame = cap.read()
+		if(ret != True):
+			break
 		fgmask = fgbg.apply(frame)
 		opening = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
 		cv2.imwrite('temp.jpg',opening)
-		sobeled = applySobel('temp.jpg',frame)
-		cv2.imshow('frame',sobeled)
+		# cv2.imshow('open',opening)
+		labeled = applySobel('temp.jpg',frame)
+		# cv2.imshow('frame',labeled)
+		# cv2.
+		if(ret):
+			out.write(frame)
 		k = cv2.waitKey(30) & 0xff
 		if k==27:
 			break;
-
 	cap.release()
+	out.release()
 	cv2.destroyAllWindows()
 
 def applySobel(image_path,original):
@@ -65,8 +77,8 @@ def applyHough(image,original):
 	img = cv2.imread(image)
 	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 	#edges = cv2.Canny(gray,50,150,apertureSize = 3) #23,55
-	edges = cv2.Canny(gray,23,55,apertureSize = 3)
-	lines = cv2.HoughLines(edges,1,np.pi/180,120) #150 #90
+	edges = cv2.Canny(gray,23,60,apertureSize = 3)
+	lines = cv2.HoughLines(edges,1,np.pi/720,120) #150 #90
 	if lines is not None:
 		# number = 0;
 		# x1_mean = y1_mean = x2_mean = y2_mean = 0;
@@ -105,7 +117,7 @@ def applyHough(image,original):
 		y2_median = int(np.ma.median(y2_list))
 		# cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,0,255),2)
 
-		lines = cv2.HoughLinesP(edges,0.5,np.pi/720,75,50,5)
+		lines = cv2.HoughLinesP(edges,0.5,np.pi/720,75,70,8)
 		l = 0;
 		xmin = ymin = 100000;
 		xmax = ymax = -100000;
@@ -127,9 +139,16 @@ def applyHough(image,original):
 		# slope_median = abs((y2_median - y1_median)/(x2_median-x1_median))
 		# print(slope_mean-slope_median);
 		# cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,0,255),2)
-		slope = (y2_median - y1_median)/(x2_median - x1_median)
+		if(x2_median - x1_median is not 0):
+			slope = (y2_median - y1_median)/(x2_median - x1_median)
+		else:
+			slope = prev_slope;
+		global cutoff, prev_x1, prev_x2, prev_y1, prev_y2, prev_slope;
+		# if(prev_slope != 0):
+		# 	if(slope - prev_slope > epsilon or slope -prev_slope < epsilon):
+		# 		slope = prev_slope;
+		prev_slope = slope;
 		x_lim_up = (0 - y1_median)/slope + x1_median
-		global cutoff, prev_x1, prev_x2, prev_y1, prev_y2;
 		if (cutoff == 0):
 			cutoff = ymax;
 		elif (cutoff > 0 and ymax > 0):
@@ -144,14 +163,24 @@ def applyHough(image,original):
 		prev_x2 = x_lim_down;
 		prev_y2 = cutoff;
 		# cv2.imshow('asd',img)
-	else:
-		cv2.line(original,(int(prev_x1),int(prev_y1)),(int(prev_x2),int(prev_y2)),(0,0,255),3)
+	# else:
+	# 	cv2.line(original,(int(prev_x1),int(prev_y1)),(int(prev_x2),int(prev_y2)),(0,0,255),3)
+		# prev_slope = 0;
 	return original
 
 
-with open('filelist.txt') as f:
-	lines = f.readlines();
-	name=lines[0].split('.',1)[0];		#5,8,10
-	cutoff = 0;
-	BGSubtraction(name);
+# with open('filelist.txt') as f:
+	# lines = f.readlines();
+	# for file in lines:
+	# 	name=lines[i].split('.',1)[0];		#5,8,10
+	# 	cutoff = 0;
+	# 	BGSubtraction(name);
 	#FrameCapture(name);
+BGSubtraction("2")
+BGSubtraction("3")
+BGSubtraction("4")
+BGSubtraction("5")
+BGSubtraction("6")
+BGSubtraction("7")
+BGSubtraction("8")
+BGSubtraction("9")
