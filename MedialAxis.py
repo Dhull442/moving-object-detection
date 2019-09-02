@@ -6,8 +6,9 @@ import math
 kernel = np.ones((5,5),np.uint8);
 cutoff = 0;
 prev_x1 = prev_x2 = prev_y1 = prev_y2 = 0
-prev_slope = 0;
-epsilon = 1;
+last5_slopes = []
+epsilon = 3;
+persist = False;
 
 # Function to extract frames
 def FrameCapture(name):
@@ -32,7 +33,7 @@ def BGSubtraction(name):
 	frame_width = int(cap.get(3))
 	frame_height = int(cap.get(4))
 	ret = 1
-	out = cv2.VideoWriter('output_'+name+'.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame_width,frame_height))
+	out = cv2.VideoWriter('result_'+name+'.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 30, (frame_width,frame_height))
 	while(ret or cap.isOpened()):
 		ret, frame = cap.read()
 		if(ret != True):
@@ -139,15 +140,35 @@ def applyHough(image,original):
 		# slope_median = abs((y2_median - y1_median)/(x2_median-x1_median))
 		# print(slope_mean-slope_median);
 		# cv2.line(original,(int(x1_mean),int(y1_mean)),(int(x2_mean),int(y2_mean)),(0,0,255),2)
+		global cutoff, prev_x1, prev_x2, prev_y1, prev_y2, last5_slopes
 		if(x2_median - x1_median is not 0):
 			slope = (y2_median - y1_median)/(x2_median - x1_median)
 		else:
-			slope = prev_slope;
-		global cutoff, prev_x1, prev_x2, prev_y1, prev_y2, prev_slope;
+			slope = last5_slopes[len(last5_slopes)-1]
+
+		prev_slope = slope
+		use_this = True;
+
+		all_neg = True;
+		all_pos = True;
+		for x in last5_slopes:
+			if (x > 0):
+				all_neg = False;
+			elif (x < 0):
+				all_pos = False;
+
+		if (len(last5_slopes) > 4) and ((all_pos and slope < 0 and last5_slopes[len(last5_slopes)-1] < 200 ) or (all_neg and slope > 0 and last5_slopes[len(last5_slopes)-1] > -200)):
+			use_this = False;
+		else:
+			last5_slopes.append(slope)
+			while (len(last5_slopes) > 5):
+				last5_slopes.pop(0)
+
+		# print(str(prev_slope) + " " + str(slope));
+
 		# if(prev_slope != 0):
 		# 	if(slope - prev_slope > epsilon or slope -prev_slope < epsilon):
 		# 		slope = prev_slope;
-		prev_slope = slope;
 		x_lim_up = (0 - y1_median)/slope + x1_median
 		if (cutoff == 0):
 			cutoff = ymax;
@@ -157,14 +178,17 @@ def applyHough(image,original):
 		x_lim_down = (cutoff - y1_median)/slope + x1_median
 		# print(str(x1_median) + " " + str(y1_median) + " " + str(x2_median) + " " + str(y2_median))
 		# cv2.line(original,(int(x1_median),int(y1_median)),(int(x2_median),int(y2_median)),(0,255,255),3)
-		cv2.line(original,(int(x_lim_up),int(0)),(int(x_lim_down),int(cutoff)),(0,0,255),3)
+		if use_this:
+			cv2.line(original,(int(x_lim_up),int(0)),(int(x_lim_down),int(cutoff)),(0,0,255),3)
+		else:
+			cv2.line(original,(int(prev_x1),int(prev_y1)),(int(prev_x2),int(prev_y2)),(0,0,255),3)
 		prev_x1 = x_lim_up;
 		prev_y1 = 0;
 		prev_x2 = x_lim_down;
 		prev_y2 = cutoff;
 		# cv2.imshow('asd',img)
-	# else:
-	# 	cv2.line(original,(int(prev_x1),int(prev_y1)),(int(prev_x2),int(prev_y2)),(0,0,255),3)
+	elif persist:
+		cv2.line(original,(int(prev_x1),int(prev_y1)),(int(prev_x2),int(prev_y2)),(0,0,255),3)
 		# prev_slope = 0;
 	return original
 
@@ -176,6 +200,7 @@ def applyHough(image,original):
 	# 	cutoff = 0;
 	# 	BGSubtraction(name);
 	#FrameCapture(name);
+BGSubtraction("1")
 BGSubtraction("2")
 BGSubtraction("3")
 BGSubtraction("4")
@@ -184,3 +209,4 @@ BGSubtraction("6")
 BGSubtraction("7")
 BGSubtraction("8")
 BGSubtraction("9")
+BGSubtraction("10")
